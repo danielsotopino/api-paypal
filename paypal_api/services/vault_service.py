@@ -1,7 +1,6 @@
 from typing import Optional, Dict, Any, List, Tuple
 from sqlalchemy.orm import Session
 from paypal_api.services.paypal.paypal_vault_service import PaypalVaultService
-from paypal_api.services.paypal.paypal_service import PayPalService
 from paypal_api.services.customer_service import CustomerService
 from paypal_api.repositories.vault_payment_method_repository import VaultPaymentMethodRepository
 from paypal_api.models.customer import Customer
@@ -26,7 +25,6 @@ class VaultService:
 
     def __init__(self):
         self.paypal_vault_service = PaypalVaultService()
-        self.paypal_service = PayPalService()
         self.customer_service = CustomerService()
         self.payment_method_repo = VaultPaymentMethodRepository()
 
@@ -325,72 +323,6 @@ class VaultService:
             logger.error("Error listando payment tokens del cliente", 
                         customer_id=customer_id, error=str(e), exc_info=True)
             raise
-
-    # =============================================================================
-    # OPERACIONES DE PAGO CON TOKENS
-    # =============================================================================
-
-    def create_payment_with_vault_token(
-        self,
-        db: Session,
-        payment_token_id: str,
-        amount: float,
-        currency: str = "USD",
-        description: Optional[str] = None
-    ) -> Dict[str, Any]:
-        """
-        Crear un pago usando un Payment Token almacenado
-        """
-        try:
-            # 1. Validar que el token existe y está activo
-            payment_method = self.get_payment_token(db, payment_token_id, sync_with_paypal=False)
-            
-            if not payment_method:
-                raise ValueError(f"Payment token {payment_token_id} no encontrado")
-                
-            if payment_method.status != 'ACTIVE':
-                raise ValueError(f"Payment token {payment_token_id} no está activo")
-
-            # 2. Crear el pago usando PayPalService
-            payment_result = self.paypal_service.create_payment_with_vault_token(
-                payment_token_id=payment_token_id,
-                amount=amount,
-                currency=currency,
-                description=description
-            )
-
-            logger.info("Pago creado exitosamente con vault token",
-                       payment_token_id=payment_token_id,
-                       payment_id=payment_result.get('id'),
-                       amount=amount,
-                       currency=currency)
-
-            return payment_result
-
-        except Exception as e:
-            logger.error("Error creando pago con vault token",
-                        payment_token_id=payment_token_id,
-                        amount=amount,
-                        error=str(e), exc_info=True)
-            raise
-
-    def validate_payment_token(self, db: Session, payment_token_id: str) -> bool:
-        """
-        Validar que un Payment Token esté activo y disponible para uso
-        """
-        try:
-            payment_method = self.get_payment_token(db, payment_token_id, sync_with_paypal=True)
-            
-            if not payment_method:
-                return False
-                
-            return payment_method.status == 'ACTIVE' and payment_method.deleted_at is None
-
-        except Exception as e:
-            logger.error("Error validando payment token",
-                        payment_token_id=payment_token_id,
-                        error=str(e), exc_info=True)
-            return False
 
     # =============================================================================
     # OPERACIONES DE SINCRONIZACIÓN

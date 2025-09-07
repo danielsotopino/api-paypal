@@ -6,9 +6,10 @@ from paypal_api.database import Base
 
 class VaultPaymentMethod(Base):
     __tablename__ = "vault_payment_methods"
+    __table_args__ = {"schema": "paypal"}
     
     id = Column(Integer, primary_key=True, autoincrement=True)  # Serial autogenerado
-    customer_id = Column(Integer, ForeignKey("customers.id"), nullable=False, index=True)
+    customer_id = Column(Integer, ForeignKey("paypal.customers.id"), nullable=False, index=True)
     
     # PayPal payment token ID (separado del ID interno)
     paypal_payment_token_id = Column(String, unique=True, nullable=False, index=True)  # PaymentTokenResponse.id

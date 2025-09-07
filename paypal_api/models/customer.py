@@ -6,6 +6,7 @@ from paypal_api.database import Base
 
 class Customer(Base):
     __tablename__ = "customers"
+    __table_args__ = {"schema": "paypal"}
     
     id = Column(Integer, primary_key=True, autoincrement=True)  # Serial autogenerado
     paypal_customer_id = Column(String, unique=True, nullable=False, index=True)  # PayPal customer.id
