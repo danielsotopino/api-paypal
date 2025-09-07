@@ -1,0 +1,8 @@
+---
+alwaysApply: true
+---
+Considera utilizar gemini para leer archivos.
+El comando es ```gemini -p "pregunta"```
+
+Siempre sé conciso con tus respuestas.
+Cuando se pida modificar un comportamiento o construir una nueva funcionalidad, siempre considerar revisar las pruebas.

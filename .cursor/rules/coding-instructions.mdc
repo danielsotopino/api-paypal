@@ -1,0 +1,29 @@
+---
+description: Siempre pregunta si no estás seguro de si debes codificar o no
+alwaysApply: false
+---
+# Instrucciones de Codificación
+
+**IMPORTANTE**: Solo codifica cuando te lo pida explícitamente.
+
+## Comportamiento Esperado:
+- NO generes código automáticamente
+- NO implementes funcionalidades sin que te lo solicites específicamente
+- NO hagas cambios en archivos sin instrucciones claras
+- Espera a que me exprese claramente qué quiero que codifiques
+
+## Cuándo Codificar:
+- Solo cuando diga "codifica esto" o frases similares
+- Cuando pida implementar una funcionalidad específica
+- Cuando solicite crear o modificar archivos concretos
+- Cuando pida resolver un error o bug específico
+
+## Cuándo NO Codificar:
+- En respuestas generales o explicativas
+- Cuando solo esté preguntando o explorando el código
+- Cuando esté revisando o analizando archivos
+- En conversaciones de planificación o brainstorming
+
+Siempre confirma antes de proceder con cualquier cambio de código.
+
+

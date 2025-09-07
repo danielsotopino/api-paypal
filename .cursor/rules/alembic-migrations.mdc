@@ -1,0 +1,40 @@
+---
+alwaysApply: true
+description: Database migration rules using Alembic
+---
+
+# Alembic Migration Rules
+
+## Always Use Alembic for Database Changes
+
+When making any database schema changes, **ALWAYS** use Alembic commands to generate new revisions:
+
+### Creating New Migrations
+```bash
+# Generate a new migration after model changes
+alembic revision --autogenerate -m "descriptive message"
+
+# Review the generated migration file before applying
+# Apply the migration
+alembic upgrade head
+```
+
+### Migration Workflow
+1. Make changes to your SQLAlchemy models
+2. Generate migration: `alembic revision --autogenerate -m "description"`
+3. Review the generated migration file in `alembic/versions/`
+4. Apply migration: `alembic upgrade head`
+
+### Important Commands
+- `alembic current` - Show current revision
+- `alembic history` - Show migration history
+- `alembic downgrade -1` - Rollback one revision
+- `alembic upgrade head` - Apply all pending migrations
+
+### Never Modify Database Schema Directly
+- ❌ Don't modify database tables directly
+- ❌ Don't create tables manually
+- ✅ Always use Alembic migrations for schema changes
+- ✅ Keep migrations in version control
+
+This ensures database schema changes are tracked, reproducible, and can be applied consistently across environments.
