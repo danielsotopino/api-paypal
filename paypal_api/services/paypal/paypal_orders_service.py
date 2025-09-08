@@ -270,12 +270,6 @@ class PaypalOrdersService:
             if response.is_success():
                 order_response = response.body
                 processed_response = self._process_order_response(order_response)
-                logger.info("Orden creada exitosamente", 
-                           order_id=processed_response.order_id,
-                           status=processed_response.status.value)
-                
-                # Procesar la respuesta y retornar estructura consistente
-                processed_response = self._process_order_response(order_response)
                 
                 logger.info("Orden procesada exitosamente",
                            order_id=processed_response.order_id,
@@ -288,7 +282,7 @@ class PaypalOrdersService:
                 error_details = response.body if hasattr(response, 'body') else str(response)
                 logger.error("Error creando orden", 
                            status_code=response.status_code,
-                           error=error_details, exc_info=True)
+                           error=error_details)
                 raise PayPalCommunicationException(f"Error creando orden: {error_details}")
                 
         except Exception as e:

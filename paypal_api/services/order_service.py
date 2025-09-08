@@ -315,7 +315,7 @@ class OrderService:
             return response
             
         except Exception as e:
-            logger.error("Error obteniendo orden", order_id=order_id, error=str(e))
+            logger.error("Error obteniendo orden", order_id=order_id, error=str(e), exc_info=True)
             raise
 
     def capture_order(self, db: Session, order_id: str, capture_request: Optional[OrderCaptureRequest] = None) -> CaptureResponse:
@@ -364,7 +364,7 @@ class OrderService:
             return response
             
         except Exception as e:
-            logger.error("Error capturando orden", order_id=order_id, error=str(e))
+            logger.error("Error capturando orden", order_id=order_id, error=str(e), exc_info=True)
             raise
 
     def list_orders(
@@ -433,5 +433,5 @@ class OrderService:
             )
             
         except Exception as e:
-            logger.error("Error listando órdenes", error=str(e))
+            logger.error("Error listando órdenes", error=str(e), exc_info=True)
             raise

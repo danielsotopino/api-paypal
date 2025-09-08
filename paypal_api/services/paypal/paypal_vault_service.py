@@ -132,7 +132,7 @@ class PaypalVaultService:
                 raise PayPalCommunicationException(str(result.errors))
                 
         except Exception as e:
-            logger.error(f"Error en create_setup_token: {str(e)}")
+            logger.error(f"Error en create_setup_token: {str(e)}", exc_info=True)
             raise PayPalCommunicationException(str(e))
     
     def get_setup_token(self, setup_token_id: str) -> Dict[str, Any]:
@@ -150,7 +150,7 @@ class PaypalVaultService:
                 raise PayPalCommunicationException(str(result.errors))
                 
         except Exception as e:
-            logger.error(f"Error en get_setup_token: {str(e)}")
+            logger.error(f"Error en get_setup_token: {str(e)}", exc_info=True)
             raise PayPalCommunicationException(str(e))
     
     def create_payment_token(
@@ -206,7 +206,7 @@ class PaypalVaultService:
                 raise PayPalCommunicationException(str(result.errors))
                 
         except Exception as e:
-            logger.error(f"Error en get_payment_token: {str(e)}")
+            logger.error(f"Error en get_payment_token: {str(e)}", exc_info=True)
             raise PayPalCommunicationException(str(e))
     
     def delete_payment_token(self, payment_token_id: str) -> bool:
@@ -224,7 +224,7 @@ class PaypalVaultService:
                 raise PayPalCommunicationException(str(result.errors))
                 
         except Exception as e:
-            logger.error(f"Error en delete_payment_token: {str(e)}")
+            logger.error(f"Error en delete_payment_token: {str(e)}", exc_info=True)
             raise PayPalCommunicationException(str(e))
     
     def list_customer_payment_tokens(
@@ -255,7 +255,7 @@ class PaypalVaultService:
                 raise PayPalCommunicationException(str(result.errors))
                 
         except Exception as e:
-            logger.error(f"Error en list_customer_payment_tokens: {str(e)}")
+            logger.error(f"Error en list_customer_payment_tokens: {str(e)}", exc_info=True)
             raise PayPalCommunicationException(str(e))
     
     def _convert_api_response_to_dict(self, api_response) -> Dict[str, Any]:

@@ -54,7 +54,7 @@ async def create_order(
         return ApiResponse.success_response(order_response.dict())
         
     except PayPalCommunicationException as e:
-        logger.error("Error de comunicación con PayPal", error=str(e))
+        logger.error("Error de comunicación con PayPal", error=str(e), exc_info=True)
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error("Error interno creando orden", error=str(e), exc_info=True)
@@ -139,7 +139,7 @@ async def get_order(
         return ApiResponse.success_response(order_response.dict())
         
     except PayPalCommunicationException as e:
-        logger.error("Error de comunicación con PayPal", error=str(e))
+        logger.error("Error de comunicación con PayPal", error=str(e), exc_info=True)
         raise HTTPException(status_code=400, detail=str(e))
     except HTTPException:
         raise
@@ -173,7 +173,7 @@ async def capture_order(
         return ApiResponse.success_response(capture_response.dict())
         
     except PayPalCommunicationException as e:
-        logger.error("Error de comunicación con PayPal", error=str(e))
+        logger.error("Error de comunicación con PayPal", error=str(e), exc_info=True)
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error("Error interno capturando orden", error=str(e), exc_info=True)

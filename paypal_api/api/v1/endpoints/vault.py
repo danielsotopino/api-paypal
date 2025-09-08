@@ -72,10 +72,10 @@ async def get_setup_token(
         return ApiResponse.success_response(result)
         
     except PayPalCommunicationException as e:
-        logger.error("Error de comunicación con PayPal", error=str(e))
+        logger.error("Error de comunicación con PayPal", error=str(e), exc_info=True)
         raise HTTPException(status_code=404, detail="Setup token no encontrado")
     except Exception as e:
-        logger.error("Error interno obteniendo setup token", error=str(e))
+        logger.error("Error interno obteniendo setup token", error=str(e), exc_info=True)
         raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
@@ -117,7 +117,7 @@ async def create_payment_token(
         return ApiResponse.success_response(response_data.dict())
         
     except PayPalCommunicationException as e:
-        logger.error("Error de comunicación con PayPal", error=str(e))
+        logger.error("Error de comunicación con PayPal", error=str(e), exc_info=True)
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error("Error interno creando payment token", error=str(e), exc_info=True)
@@ -158,10 +158,10 @@ async def get_payment_token(
         return ApiResponse.success_response(payment_method_response.dict())
         
     except PayPalCommunicationException as e:
-        logger.error("Error de comunicación con PayPal", error=str(e))
+        logger.error("Error de comunicación con PayPal", error=str(e), exc_info=True)
         raise HTTPException(status_code=404, detail="Payment token no encontrado")
     except Exception as e:
-        logger.error("Error interno obteniendo payment token", error=str(e))
+        logger.error("Error interno obteniendo payment token", error=str(e), exc_info=True)
         raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
@@ -189,10 +189,10 @@ async def delete_payment_token(
             raise HTTPException(status_code=400, detail="No se pudo eliminar el payment token")
         
     except PayPalCommunicationException as e:
-        logger.error("Error de comunicación con PayPal", error=str(e))
+        logger.error("Error de comunicación con PayPal", error=str(e), exc_info=True)
         raise HTTPException(status_code=404, detail="Payment token no encontrado")
     except Exception as e:
-        logger.error("Error interno eliminando payment token", error=str(e))
+        logger.error("Error interno eliminando payment token", error=str(e), exc_info=True)
         raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
@@ -230,10 +230,10 @@ async def list_customer_payment_tokens(
         return ApiResponse.success_response(result)
         
     except PayPalCommunicationException as e:
-        logger.error("Error de comunicación con PayPal", error=str(e))
+        logger.error("Error de comunicación con PayPal", error=str(e), exc_info=True)
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error("Error interno listando payment tokens", error=str(e))
+        logger.error("Error interno listando payment tokens", error=str(e), exc_info=True)
         raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
@@ -278,10 +278,10 @@ async def create_payment_with_vault_token(
         return ApiResponse.success_response(payment_response.dict())
         
     except PayPalCommunicationException as e:
-        logger.error("Error de comunicación con PayPal", error=str(e))
+        logger.error("Error de comunicación con PayPal", error=str(e), exc_info=True)
         raise HTTPException(status_code=400, detail=str(e))
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Error interno creando pago con vault token", error=str(e))
+        logger.error("Error interno creando pago con vault token", error=str(e), exc_info=True)
         raise HTTPException(status_code=500, detail="Error interno del servidor")

@@ -387,7 +387,7 @@ class VaultService:
 
                 except Exception as e:
                     logger.error("Error sincronizando token individual", 
-                               token_id=token_data.get('id'), error=str(e))
+                               token_id=token_data.get('id'), error=str(e), exc_info=True)
                     error_count += 1
 
             logger.info("Sincronización de customer completada",

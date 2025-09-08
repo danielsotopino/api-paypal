@@ -251,7 +251,7 @@ async def update_customer(
     except ValueError as e:
         logger.error("Error de validación actualizando cliente", 
                     customer_id=customer_id, 
-                    error=str(e))
+                    error=str(e), exc_info=True)
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error("Error actualizando cliente", 
