@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from .endpoints import payments, webhooks, vault, customers
+from .endpoints import payments, webhooks, vault, customers, orders
 
 api_router = APIRouter()
 
@@ -25,4 +25,10 @@ api_router.include_router(
     customers.router,
     prefix="/customers",
     tags=["customers"]
+)
+
+api_router.include_router(
+    orders.router,
+    prefix="/orders",
+    tags=["orders"]
 )

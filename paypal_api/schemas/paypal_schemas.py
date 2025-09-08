@@ -157,7 +157,7 @@ class PaymentMethodResponse(BaseModel):
 
 class VaultPaymentRequest(BaseModel):
     payment_method_id: str = Field(..., description="ID del método de pago almacenado")
-    amount: Decimal = Field(..., gt=0, description="Monto del pago")
+    amount: str = Field(..., description="Monto del pago")
     currency: str = Field("USD", description="Moneda del pago")
     description: str = Field(..., description="Descripción del pago")
 

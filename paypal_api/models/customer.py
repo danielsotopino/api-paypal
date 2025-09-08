@@ -23,5 +23,9 @@ class Customer(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
-    # Relación
+    # Relaciones
     payment_methods = relationship("VaultPaymentMethod", back_populates="customer")
+    orders = relationship("Order", back_populates="customer")
+    
+    def __repr__(self):
+        return f"<Customer(id={self.id}, paypal_customer_id='{self.paypal_customer_id}', email='{self.email_address}')>"

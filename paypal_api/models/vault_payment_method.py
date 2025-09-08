@@ -35,8 +35,9 @@ class VaultPaymentMethod(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     deleted_at = Column(DateTime(timezone=True), nullable=True)  # Soft delete
     
-    # Relación
+    # Relaciones
     customer = relationship("Customer", back_populates="payment_methods")
+    orders = relationship("Order", back_populates="vault_payment_method")
     
     def __repr__(self):
         return f"<VaultPaymentMethod(id={self.id}, paypal_token='{self.paypal_payment_token_id}', customer={self.customer_id})>"
