@@ -49,6 +49,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = env_file
         case_sensitive = True
+        extra="allow"  # Allow extra fields from environment
 
 def get_settings():
     return Settings()

@@ -22,6 +22,7 @@ setup(
     exclude_package_data={"": ["alembic/*", "alembic.ini"]},
     install_requires=[
         "fastapi==0.104.1",
+        "paypal-server-sdk==1.1.0",
         "uvicorn[standard]==0.24.0",
         "python-multipart==0.0.6",
         "python-jose[cryptography]==3.3.0",
