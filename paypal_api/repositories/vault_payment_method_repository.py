@@ -60,7 +60,7 @@ class VaultPaymentMethodRepository:
     def get_by_customer_id(
         db: Session, 
         customer_id: int,
-        status: Optional[str] = None,
+        is_active: Optional[bool] = None,
         skip: int = 0,
         limit: int = 100
     ) -> tuple[List[VaultPaymentMethod], int]:
@@ -69,8 +69,8 @@ class VaultPaymentMethodRepository:
             VaultPaymentMethod.customer_id == customer_id
         )
         
-        if status:
-            query = query.filter(VaultPaymentMethod.status == status)
+        if is_active:
+            query = query.filter(VaultPaymentMethod.is_active == True)
         
         # Excluir métodos de pago eliminados (soft delete)
         query = query.filter(VaultPaymentMethod.deleted_at.is_(None))
@@ -89,7 +89,7 @@ class VaultPaymentMethodRepository:
     ) -> tuple[List[VaultPaymentMethod], int]:
         """Obtener métodos de pago activos de un cliente"""
         return VaultPaymentMethodRepository.get_by_customer_id(
-            db, customer_id, status='ACTIVE', skip=skip, limit=limit
+            db, customer_id, is_active=True, skip=skip, limit=limit
         )
 
     @staticmethod
@@ -175,7 +175,7 @@ class VaultPaymentMethodRepository:
             if not payment_method:
                 return False
                 
-            payment_method.status = 'DELETED'
+            payment_method.is_active = False
             payment_method.deleted_at = datetime.utcnow()
             db.commit()
             

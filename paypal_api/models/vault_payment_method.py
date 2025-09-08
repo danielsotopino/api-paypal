@@ -24,7 +24,7 @@ class VaultPaymentMethod(Base):
     permit_multiple_tokens = Column(Boolean, default=False)
     
     # Estado del método de pago
-    status = Column(String, default="ACTIVE", index=True)  # ACTIVE, INACTIVE, DELETED
+    is_active = Column(Boolean, default=True)
     paypal_status = Column(String)  # Estado en PayPal si lo necesitamos
     
     # Metadatos de PayPal

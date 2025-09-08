@@ -149,7 +149,7 @@ async def get_payment_token(
             id=payment_method.paypal_payment_token_id,
             payer_id=payment_method.payer_id,
             type=payment_method.payment_source_type,
-            state=payment_method.paypal_status or payment_method.status,
+            is_active=payment_method.is_active,
             create_time=payment_method.created_at.isoformat() if payment_method.created_at else None,
             update_time=payment_method.updated_at.isoformat() if payment_method.updated_at else None
         )

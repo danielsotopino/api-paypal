@@ -145,7 +145,7 @@ class PaymentMethodResponse(BaseModel):
     payer_id: str = Field(..., description="ID del pagador")
     type: str = Field(..., description="Tipo de método de pago")
     credit_card: Optional[CreditCardResponse] = None
-    state: str = Field(..., description="Estado del método de pago")
+    is_active: bool = Field(..., description="Estado del método de pago")
     create_time: str = Field(..., description="Fecha de creación")
     update_time: Optional[str] = None
 

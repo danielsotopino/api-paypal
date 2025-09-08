@@ -2,7 +2,6 @@ from typing import Optional, Dict, Any, List, Tuple
 from sqlalchemy.orm import Session
 from paypal_api.repositories.customer_repository import CustomerRepository
 from paypal_api.models.customer import Customer
-from paypal_api.core.exceptions import PayPalCommunicationException
 import structlog
 
 logger = structlog.get_logger(__name__)
