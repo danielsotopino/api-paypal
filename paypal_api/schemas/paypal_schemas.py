@@ -82,11 +82,6 @@ class CreditCardType(str, Enum):
     AMEX = "amex"
 
 
-class PaymentMethodType(str, Enum):
-    CREDIT_CARD = "credit_card"
-    BANK_ACCOUNT = "bank_account"
-
-
 class CreditCardRequest(BaseModel):
     type: CreditCardType = Field(..., description="Tipo de tarjeta")
     number: str = Field(..., description="Número de tarjeta")
@@ -147,12 +142,12 @@ class CreditCardResponse(BaseModel):
 
 class PaymentMethodResponse(BaseModel):
     id: str = Field(..., description="ID del método de pago")
-    payer_id: str
-    type: PaymentMethodType
+    payer_id: str = Field(..., description="ID del pagador")
+    type: str = Field(..., description="Tipo de método de pago")
     credit_card: Optional[CreditCardResponse] = None
     state: str = Field(..., description="Estado del método de pago")
-    create_time: datetime
-    update_time: datetime
+    create_time: str = Field(..., description="Fecha de creación")
+    update_time: Optional[str] = None
 
 
 class VaultPaymentRequest(BaseModel):
@@ -162,9 +157,184 @@ class VaultPaymentRequest(BaseModel):
     description: str = Field(..., description="Descripción del pago")
 
 
-class PaymentTokenResponse(BaseModel):
+class VaultPaymentMethodRequest(BaseModel):
     """Esquema para la respuesta de payment-tokens de PayPal"""
     facilitatorAccessToken: str = Field(..., description="Token de acceso del facilitador")
     payerID: str = Field(..., description="ID del pagador")
     paymentSource: str = Field(..., description="Fuente del pago (ej: 'paypal')")
     vaultSetupToken: str = Field(..., description="Token de configuración del vault")
+
+
+# Order Schemas
+class OrderStatus(str, Enum):
+    CREATED = "CREATED"
+    SAVED = "SAVED"
+    APPROVED = "APPROVED"
+    VOIDED = "VOIDED"
+    COMPLETED = "COMPLETED"
+    PAYER_ACTION_REQUIRED = "PAYER_ACTION_REQUIRED"
+
+
+class CaptureStatus(str, Enum):
+    COMPLETED = "COMPLETED"
+    DECLINED = "DECLINED"
+    PARTIALLY_REFUNDED = "PARTIALLY_REFUNDED"
+    PENDING = "PENDING"
+    REFUNDED = "REFUNDED"
+
+
+class MoneyResponse(BaseModel):
+    currency_code: str = Field(..., description="Código de moneda")
+    value: str = Field(..., description="Valor monetario")
+
+
+class LinkResponse(BaseModel):
+    href: str = Field(..., description="URL del enlace")
+    rel: str = Field(..., description="Relación del enlace")
+    method: str = Field(..., description="Método HTTP")
+
+
+class AddressResponse(BaseModel):
+    address_line_1: Optional[str] = None
+    address_line_2: Optional[str] = None
+    admin_area_2: Optional[str] = None
+    admin_area_1: Optional[str] = None
+    postal_code: Optional[str] = None
+    country_code: Optional[str] = None
+
+
+class NameResponse(BaseModel):
+    given_name: Optional[str] = None
+    surname: Optional[str] = None
+
+
+class PayerResponse(BaseModel):
+    email_address: Optional[str] = None
+    payer_id: Optional[str] = None
+    name: Optional[NameResponse] = None
+    phone: Optional[str] = None
+    birth_date: Optional[str] = None
+    tax_info: Optional[Dict[str, Any]] = None
+    address: Optional[AddressResponse] = None
+
+
+class SellerProtectionResponse(BaseModel):
+    status: str = Field(..., description="Estado de protección del vendedor")
+    dispute_categories: List[str] = Field(default_factory=list, description="Categorías de disputa")
+
+
+class SellerReceivableBreakdownResponse(BaseModel):
+    gross_amount: MoneyResponse
+    paypal_fee: MoneyResponse
+    paypal_fee_in_receivable_currency: Optional[MoneyResponse] = None
+    net_amount: MoneyResponse
+    receivable_amount: Optional[MoneyResponse] = None
+    exchange_rate: Optional[str] = None
+    platform_fees: Optional[List[Dict[str, Any]]] = None
+
+
+class CaptureResponse(BaseModel):
+    status: CaptureStatus = Field(..., description="Estado de la captura")
+    status_details: Optional[Dict[str, Any]] = None
+    id: str = Field(..., description="ID de la captura")
+    amount: MoneyResponse
+    invoice_id: Optional[str] = None
+    custom_id: Optional[str] = None
+    network_transaction_reference: Optional[Dict[str, Any]] = None
+    seller_protection: Optional[SellerProtectionResponse] = None
+    final_capture: Optional[bool] = None
+    seller_receivable_breakdown: Optional[SellerReceivableBreakdownResponse] = None
+    disbursement_mode: Optional[str] = None
+    links: List[LinkResponse] = Field(default_factory=list)
+    processor_response: Optional[Dict[str, Any]] = None
+    create_time: Optional[str] = None
+    update_time: Optional[str] = None
+
+
+class PaymentCollectionResponse(BaseModel):
+    authorizations: Optional[List[Dict[str, Any]]] = None
+    captures: List[CaptureResponse] = Field(default_factory=list)
+    refunds: Optional[List[Dict[str, Any]]] = None
+
+
+class PurchaseUnitResponse(BaseModel):
+    reference_id: Optional[str] = None
+    amount: Optional[MoneyResponse] = None
+    payee: Optional[Dict[str, Any]] = None
+    payment_instruction: Optional[Dict[str, Any]] = None
+    description: Optional[str] = None
+    custom_id: Optional[str] = None
+    invoice_id: Optional[str] = None
+    id: Optional[str] = None
+    soft_descriptor: Optional[str] = None
+    items: Optional[List[Dict[str, Any]]] = None
+    shipping: Optional[Dict[str, Any]] = None
+    supplementary_data: Optional[Dict[str, Any]] = None
+    payments: Optional[PaymentCollectionResponse] = None
+    most_recent_errors: Optional[List[Dict[str, Any]]] = None
+
+
+class PaypalWalletStoredCredentialResponse(BaseModel):
+    payment_initiator: str = Field(..., description="Iniciador del pago")
+    charge_pattern: Optional[str] = None
+    usage_pattern: Optional[str] = None
+    usage: str = Field(..., description="Tipo de uso")
+
+
+class PaypalWalletResponse(BaseModel):
+    email_address: Optional[str] = None
+    account_id: Optional[str] = None
+    account_status: Optional[str] = None
+    name: Optional[NameResponse] = None
+    phone_type: Optional[str] = None
+    phone_number: Optional[str] = None
+    birth_date: Optional[str] = None
+    business_name: Optional[str] = None
+    tax_info: Optional[Dict[str, Any]] = None
+    address: Optional[AddressResponse] = None
+    attributes: Optional[Dict[str, Any]] = None
+    stored_credential: Optional[PaypalWalletStoredCredentialResponse] = None
+
+
+class PaymentSourceResponse(BaseModel):
+    card: Optional[Dict[str, Any]] = None
+    paypal: Optional[PaypalWalletResponse] = None
+    bancontact: Optional[Dict[str, Any]] = None
+    blik: Optional[Dict[str, Any]] = None
+    eps: Optional[Dict[str, Any]] = None
+    giropay: Optional[Dict[str, Any]] = None
+    ideal: Optional[Dict[str, Any]] = None
+    mybank: Optional[Dict[str, Any]] = None
+    p_24: Optional[Dict[str, Any]] = None
+    sofort: Optional[Dict[str, Any]] = None
+    trustly: Optional[Dict[str, Any]] = None
+    apple_pay: Optional[Dict[str, Any]] = None
+    google_pay: Optional[Dict[str, Any]] = None
+    venmo: Optional[Dict[str, Any]] = None
+
+
+class OrderResponse(BaseModel):
+    create_time: Optional[str] = None
+    update_time: Optional[str] = None
+    id: str = Field(..., description="ID de la orden")
+    payment_source: Optional[PaymentSourceResponse] = None
+    intent: Optional[str] = None
+    payer: Optional[PayerResponse] = None
+    purchase_units: List[PurchaseUnitResponse] = Field(default_factory=list)
+    status: OrderStatus = Field(..., description="Estado de la orden")
+    links: List[LinkResponse] = Field(default_factory=list)
+
+
+class OrderCreateResponse(BaseModel):
+    """Respuesta simplificada para la creación de órdenes"""
+    order_id: str = Field(..., description="ID de la orden creada")
+    status: OrderStatus = Field(..., description="Estado de la orden")
+    payment_source: Optional[str] = Field(None, description="Fuente de pago utilizada")
+    payer_email: Optional[str] = Field(None, description="Email del pagador")
+    payer_id: Optional[str] = Field(None, description="ID del pagador")
+    total_amount: Optional[str] = Field(None, description="Monto total")
+    currency_code: Optional[str] = Field(None, description="Código de moneda")
+    create_time: Optional[str] = Field(None, description="Fecha de creación")
+    approval_url: Optional[str] = Field(None, description="URL de aprobación")
+    captures: List[CaptureResponse] = Field(default_factory=list, description="Capturas realizadas")
+    links: List[LinkResponse] = Field(default_factory=list, description="Enlaces relacionados")

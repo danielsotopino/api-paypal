@@ -9,7 +9,9 @@ from paypal_api.core.exceptions import PayPalCommunicationException
 from paypalserversdk.paypal_serversdk_client import PaypalServersdkClient
 from paypalserversdk.configuration import Environment
 
-from paypal_api.schemas.paypal_schemas import PaymentTokenResponse
+from paypal_api.schemas.paypal_schemas import VaultPaymentMethodRequest
+
+
 
 logger = structlog.get_logger(__name__)
 
@@ -153,7 +155,7 @@ class PaypalVaultService:
     
     def create_payment_token(
         self,
-        payment_token_response: PaymentTokenResponse
+        vault_payment_method_request: VaultPaymentMethodRequest
     ) -> Dict[str, Any]:
         """
         Crea un Payment Token permanente en el Vault
@@ -166,12 +168,12 @@ class PaypalVaultService:
                 "body": {
                     "payment_source": {
                         "token": {
-                            "id": payment_token_response.vaultSetupToken,
+                            "id": vault_payment_method_request.vaultSetupToken,
                             "type": "SETUP_TOKEN"
                         }
                     },
                     "customer": {
-                        "id": payment_token_response.payerID
+                        "id": vault_payment_method_request.payerID
                     }
                 }
             }

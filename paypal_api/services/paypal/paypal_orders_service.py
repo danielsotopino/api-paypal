@@ -1,9 +1,20 @@
 from typing import Optional, Dict, Any, List
+from paypalserversdk.http.api_response import ApiResponse
 from paypalserversdk.http.auth.o_auth_2 import ClientCredentialsAuthCredentials
 import structlog
 import uuid
 from paypal_api.config import settings
 from paypal_api.core.exceptions import PayPalCommunicationException
+from paypal_api.schemas.paypal_schemas import (
+    OrderCreateResponse, 
+    OrderStatus, 
+    CaptureResponse,
+    CaptureStatus,
+    MoneyResponse,
+    LinkResponse,
+    SellerProtectionResponse,
+    SellerReceivableBreakdownResponse
+)
 
 # Importaciones del SDK de PayPal
 from paypalserversdk.paypal_serversdk_client import PaypalServersdkClient
@@ -41,6 +52,176 @@ class PaypalOrdersService:
             logger.error(f"Error inicializando PaypalOrdersService: {str(e)}", exc_info=True)
             raise PayPalCommunicationException(f"Error inicializando PaypalOrdersService: {str(e)}")
     
+    def _process_order_response(self, paypal_response: Any) -> OrderCreateResponse:
+        """
+        Procesa la respuesta de PayPal y la convierte a nuestro esquema
+        
+        Args:
+            paypal_response: Respuesta del SDK de PayPal
+            
+        Returns:
+            OrderCreateResponse: Respuesta procesada
+        """
+        try:
+            # Extraer información básica
+            order_id = paypal_response.id
+            status = OrderStatus(paypal_response.status)
+            
+            # Extraer información del pagador
+            payer_email = None
+            payer_id = None
+            if paypal_response.payer:
+                payer_email = paypal_response.payer.email_address
+                payer_id = paypal_response.payer.payer_id
+            
+            # Extraer información de la fuente de pago
+            payment_source = None
+            if paypal_response.payment_source:
+                if paypal_response.payment_source.paypal:
+                    payment_source = "paypal"
+                elif paypal_response.payment_source.card:
+                    payment_source = "card"
+                else:
+                    payment_source = "unknown"
+            
+            # Extraer información de monto (del primer purchase unit)
+            total_amount = None
+            currency_code = None
+            # if paypal_response.purchase_units and len(paypal_response.purchase_units) > 0:
+            #     first_unit = paypal_response.purchase_units[0]
+            #     print(first_unit)
+            #     if first_unit:
+            #         total_amount = first_unit.value
+            #         currency_code = first_unit.currency_code
+            
+            # Extraer capturas
+            captures = []
+            if paypal_response.purchase_units:
+                for unit in paypal_response.purchase_units:
+                    if unit.payments and unit.payments.captures:
+                        for capture in unit.payments.captures:
+                            # Procesar seller_protection
+                            seller_protection = None
+                            if capture.seller_protection:
+                                seller_protection = SellerProtectionResponse(
+                                    status=capture.seller_protection.status,
+                                    dispute_categories=capture.seller_protection.dispute_categories or []
+                                )
+                            
+                            # Procesar seller_receivable_breakdown
+                            seller_breakdown = None
+                            if capture.seller_receivable_breakdown:
+                                breakdown = capture.seller_receivable_breakdown
+                                print(breakdown)
+                                seller_breakdown = SellerReceivableBreakdownResponse(
+                                    gross_amount=MoneyResponse(
+                                        currency_code=breakdown.gross_amount.currency_code,
+                                        value=breakdown.gross_amount.value
+                                    ),
+                                    paypal_fee=MoneyResponse(
+                                        currency_code=breakdown.paypal_fee.currency_code,
+                                        value=breakdown.paypal_fee.value
+                                    ),
+                                    net_amount=MoneyResponse(
+                                        currency_code=breakdown.net_amount.currency_code,
+                                        value=breakdown.net_amount.value
+                                    ),
+                                    # paypal_fee_in_receivable_currency=(
+                                    #     MoneyResponse(
+                                    #         currency_code=breakdown.paypal_fee_in_receivable_currency.currency_code,
+                                    #         value=breakdown.paypal_fee_in_receivable_currency.value
+                                    #     ) if breakdown.paypal_fee_in_receivable_currency else None
+                                    # ) if breakdown.paypal_fee_in_receivable_currency else None,
+                                    # receivable_amount=(
+                                    #     MoneyResponse(
+                                    #         currency_code=breakdown.receivable_amount.currency_code,
+                                    #         value=breakdown.receivable_amount.value
+                                    #     ) if breakdown.receivable_amount else None
+                                    # ) if breakdown.receivable_amount else None,
+                                    # exchange_rate=breakdown.exchange_rate,
+                                    # platform_fees=breakdown.platform_fees
+                                )
+                            
+                            # Procesar links
+                            links = []
+                            if capture.links:
+                                for link in capture.links:
+                                    links.append(LinkResponse(
+                                        href=link.href,
+                                        rel=link.rel,
+                                        method=link.method
+                                    ))
+                            print(capture)
+                            capture_response = CaptureResponse(
+                                status=CaptureStatus(capture.status),
+                                status_details=capture.status_details if hasattr(capture, 'status_details') else None,
+                                id=capture.id,
+                                amount=MoneyResponse(
+                                    currency_code=capture.amount.currency_code,
+                                    value=capture.amount.value
+                                ),
+                                invoice_id=capture.invoice_id if hasattr(capture, 'invoice_id') else None,
+                                custom_id=capture.custom_id if hasattr(capture, 'custom_id') else None,
+                                network_transaction_reference=capture.network_transaction_reference if hasattr(capture, 'network_transaction_reference') else None,
+                                seller_protection=seller_protection,
+                                final_capture=capture.final_capture if hasattr(capture, 'final_capture') else None,
+                                seller_receivable_breakdown=seller_breakdown if hasattr(capture, 'seller_receivable_breakdown') else None,
+                                disbursement_mode=capture.disbursement_mode if hasattr(capture, 'disbursement_mode') else None,
+                                links=links,
+                                processor_response=capture.processor_response if hasattr(capture, 'processor_response') else None,
+                                create_time=capture.create_time if hasattr(capture, 'create_time') else None,
+                                update_time=capture.update_time if hasattr(capture, 'update_time') else None    
+                            )
+                            captures.append(capture_response)
+            
+            # Extraer enlaces de la orden
+            order_links = []
+            if paypal_response.links:
+                for link in paypal_response.links:
+                    order_links.append(LinkResponse(
+                        href=link.href,
+                        rel=link.rel,
+                        method=link.method
+                    ))
+            
+            # Buscar URL de aprobación
+            approval_url = None
+            for link in order_links:
+                if link.rel == "approve":
+                    approval_url = link.href
+                    break
+            
+            return OrderCreateResponse(
+                order_id=order_id,
+                status=status,
+                payment_source=payment_source,
+                payer_email=payer_email,
+                payer_id=payer_id,
+                total_amount=total_amount,
+                currency_code=currency_code,
+                create_time=paypal_response.create_time if hasattr(paypal_response, 'create_time') else None,
+                approval_url=approval_url,
+                captures=captures,
+                links=order_links
+            )
+            
+        except Exception as e:
+            logger.error("Error procesando respuesta de orden", error=str(e), exc_info=True)
+            # Retorno mínimo en caso de error
+            return OrderCreateResponse(
+                order_id=paypal_response.id if hasattr(paypal_response, 'id') else "unknown",
+                status=OrderStatus.CREATED,
+                payment_source=None,
+                payer_email=None,
+                payer_id=None,
+                total_amount=None,
+                currency_code=None,
+                create_time=None,
+                approval_url=None,
+                captures=[],
+                links=[]
+            )
+    
     def create_order(
         self,
         intent: str = "CAPTURE",
@@ -48,7 +229,7 @@ class PaypalOrdersService:
         payment_source: Optional[Dict[str, Any]] = None,
         application_context: Optional[Dict[str, Any]] = None,
         paypal_request_id: Optional[str] = None
-    ) -> Dict[str, Any]:
+    ) -> OrderCreateResponse:
         """
         Crear una nueva orden usando el SDK de PayPal
         
@@ -60,7 +241,7 @@ class PaypalOrdersService:
             paypal_request_id: ID de request de PayPal para idempotencia
             
         Returns:
-            Dict con la respuesta de PayPal
+            OrderCreateResponse: Respuesta procesada de la orden
         """
         try:
             # Generar ID de request si no se proporciona
@@ -84,18 +265,30 @@ class PaypalOrdersService:
 
             # Crear la orden usando el SDK
             response = self.orders_controller.create_order(request)
+
             
             if response.is_success():
                 order_response = response.body
+                processed_response = self._process_order_response(order_response)
                 logger.info("Orden creada exitosamente", 
-                           order_id=order_response.get("id"),
-                           status=order_response.get("status"))
-                return order_response
+                           order_id=processed_response.order_id,
+                           status=processed_response.status.value)
+                
+                # Procesar la respuesta y retornar estructura consistente
+                processed_response = self._process_order_response(order_response)
+                
+                logger.info("Orden procesada exitosamente",
+                           order_id=processed_response.order_id,
+                           status=processed_response.status.value,
+                           payment_source=processed_response.payment_source,
+                           captures_count=len(processed_response.captures))
+                
+                return processed_response
             else:
                 error_details = response.body if hasattr(response, 'body') else str(response)
                 logger.error("Error creando orden", 
                            status_code=response.status_code,
-                           error=error_details)
+                           error=error_details, exc_info=True)
                 raise PayPalCommunicationException(f"Error creando orden: {error_details}")
                 
         except Exception as e:
@@ -113,7 +306,7 @@ class PaypalOrdersService:
         return_url: Optional[str] = None,
         cancel_url: Optional[str] = None,
         paypal_request_id: Optional[str] = None
-    ) -> Dict[str, Any]:
+    ) -> OrderCreateResponse:
         """
         Crear una orden usando un token guardado en el vault
         
@@ -201,7 +394,7 @@ class PaypalOrdersService:
         return_url: Optional[str] = None,
         cancel_url: Optional[str] = None,
         paypal_request_id: Optional[str] = None
-    ) -> Dict[str, Any]:
+    ) -> OrderCreateResponse:
         """
         Crear una orden con items detallados
         

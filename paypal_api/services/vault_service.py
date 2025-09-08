@@ -5,7 +5,7 @@ from paypal_api.services.customer_service import CustomerService
 from paypal_api.repositories.vault_payment_method_repository import VaultPaymentMethodRepository
 from paypal_api.models.customer import Customer
 from paypal_api.models.vault_payment_method import VaultPaymentMethod
-from paypal_api.schemas.paypal_schemas import PaymentTokenResponse
+from paypal_api.schemas.paypal_schemas import VaultPaymentMethodRequest
 from paypal_api.core.exceptions import PayPalCommunicationException
 import structlog
 
@@ -118,7 +118,7 @@ class VaultService:
     def create_payment_token_and_store(
         self,
         db: Session,
-        payment_token_response: PaymentTokenResponse
+        vault_payment_method_request: VaultPaymentMethodRequest
     ) -> Tuple[VaultPaymentMethod, Dict[str, Any]]:
         """
         Crear un Payment Token en PayPal y almacenarlo en la base de datos
@@ -128,7 +128,7 @@ class VaultService:
         """
         try:
             # 1. Crear el payment token en PayPal
-            paypal_response = self.paypal_vault_service.create_payment_token(payment_token_response)
+            paypal_response = self.paypal_vault_service.create_payment_token(vault_payment_method_request)
             
             # 2. Extraer información del cliente de la respuesta
             customer_info = paypal_response.get('customer', {})
@@ -138,7 +138,7 @@ class VaultService:
             # 3. Crear o obtener el cliente en nuestra DB
             customer = self.create_or_get_customer(
                 db=db,
-                paypal_customer_id=customer_info.get('id', payment_token_response.payerID),
+                paypal_customer_id=customer_info.get('id', vault_payment_method_request.payerID),
                 email_address=paypal_info.get('email_address', ''),
                 given_name=paypal_info.get('name', {}).get('given_name'),
                 surname=paypal_info.get('name', {}).get('surname')

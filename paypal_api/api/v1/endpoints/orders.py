@@ -6,7 +6,7 @@ from paypal_api.schemas.order_schemas import (
     OrderCreateRequest, OrderResponse, OrderListResponse,
     OrderCaptureRequest, CaptureResponse
 )
-from paypal_api.schemas.paypal_schemas import VaultPaymentRequest
+from paypal_api.schemas.paypal_schemas import OrderCreateResponse, VaultPaymentRequest
 from paypal_api.schemas.response_models import ApiResponse
 from paypal_api.services.order_service import OrderService
 from paypal_api.database import get_db
@@ -61,7 +61,7 @@ async def create_order(
         raise HTTPException(status_code=500, detail="Error interno del servidor")
 
 
-@router.post("/with-vault-token", response_model=ApiResponse[OrderResponse])
+@router.post("/with-vault-token", response_model=ApiResponse[OrderCreateResponse])
 async def create_order_with_vault_token(
     vault_payment: VaultPaymentRequest,
     order_service: OrderService = Depends(get_order_service),
@@ -89,20 +89,20 @@ async def create_order_with_vault_token(
             description=vault_payment.description
         )
 
-        order_response = {
-            "id": "123",
-            "status": "CREATED",
-            "amount": vault_payment.amount,
-            "currency": vault_payment.currency,
-            "description": vault_payment.description
-        }
+        # order_response = {
+        #     "id": "123",
+        #     "status": "CREATED",
+        #     "amount": vault_payment.amount,
+        #     "currency": vault_payment.currency,
+        #     "description": vault_payment.description
+        # }
 
         print(order_response)
         
         logger.info("Orden con vault token creada exitosamente", 
-                   order_id=order_response.id,
-                   status=order_response.status)
-        return ApiResponse.success_response(order_response.dict())
+                   order_id=order_response.order_id,
+                   status=order_response.status.value)
+        return ApiResponse.success_response(order_response)
         
     except PayPalCommunicationException as e:
         logger.error("Error de comunicación con PayPal", error=str(e))

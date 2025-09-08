@@ -5,7 +5,7 @@ from paypal_api.schemas.paypal_schemas import (
     PaymentMethodRequest,
     PaymentMethodResponse,
     CreditCardRequest,
-    PaymentTokenResponse,
+    VaultPaymentMethodRequest,
     VaultPaymentRequest,
     PaymentResponse
 )
@@ -81,7 +81,7 @@ async def get_setup_token(
 
 @router.post("/payment-tokens", response_model=ApiResponse[PaymentMethodResponse])
 async def create_payment_token(
-    payment_method: PaymentTokenResponse,
+    payment_method: VaultPaymentMethodRequest,
     vault_service: VaultService = Depends(get_vault_service),
     db: Session = Depends(get_db)
 ):
