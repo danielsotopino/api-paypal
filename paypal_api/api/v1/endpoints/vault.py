@@ -2,12 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Header
 from sqlalchemy.orm import Session
 from typing import Optional, List
 from paypal_api.schemas.paypal_schemas import (
-    PaymentMethodRequest,
     PaymentMethodResponse,
-    CreditCardRequest,
     VaultPaymentMethodRequest,
     VaultPaymentRequest,
-    PaymentResponse
+    PaymentResponse,
+    VaultSetupTokenRequest
 )
 from paypal_api.schemas.response_models import ApiResponse
 from paypal_api.services.vault_service import VaultService
@@ -27,8 +26,7 @@ def get_vault_service() -> VaultService:
 
 @router.post("/setup-tokens", response_model=ApiResponse[dict])
 async def create_setup_token(
-    payment_method: PaymentMethodRequest,
-    paypal_request_id: Optional[str] = Header(None, alias="PayPal-Request-Id"),
+    payment_method: VaultSetupTokenRequest,
     vault_service: VaultService = Depends(get_vault_service)
 ):
     """
@@ -42,7 +40,22 @@ async def create_setup_token(
     try:
         logger.info("Creando setup token")
         
-        result = vault_service.create_setup_token()
+        result = vault_service.create_setup_token( 
+            customer_id=payment_method.customer_id,
+            merchant_customer_id=payment_method.merchant_customer_id,
+            paypal_request_id=payment_method.paypal_request_id,
+            usage_type=payment_method.usage_type,
+            usage_pattern=payment_method.usage_pattern,
+            billing_plan_price_value=payment_method.billing_plan_price_value,
+            billing_plan_frequency_interval_count=payment_method.billing_plan_frequency_interval_count,
+            billing_plan_start_date=payment_method.billing_plan_start_date,
+            billing_plan_one_time_charges_product_value=payment_method.billing_plan_one_time_charges_product_value,
+            billing_plan_one_time_charges_total_amount_value=payment_method.billing_plan_one_time_charges_total_amount_value,
+            product_description=payment_method.product_description,
+            name=payment_method.name,
+            return_url=payment_method.return_url,
+            cancel_url=payment_method.cancel_url
+        )
         
         logger.info("Setup token creado exitosamente", result=result)
         return ApiResponse.success_response(result)
@@ -106,7 +119,7 @@ async def create_payment_token(
             id=payment_method_db.paypal_payment_token_id,
             payer_id=payment_method_db.payer_id,
             type=payment_method_db.payment_source_type,
-            state=payment_method_db.status,
+            is_active=payment_method_db.is_active,
             create_time=payment_method_db.created_at.isoformat() if payment_method_db.created_at else None,
             update_time=payment_method_db.updated_at.isoformat() if payment_method_db.updated_at else None
         )

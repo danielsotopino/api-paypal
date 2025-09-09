@@ -87,8 +87,15 @@ class VaultService:
         paypal_request_id: Optional[str] = None,
         usage_type: Optional[str] = None,
         usage_pattern: Optional[str] = None,
-        billing_plan: Optional[Dict[str, Any]] = None,
-        experience_context: Optional[Dict[str, Any]] = None,
+        billing_plan_price_value: Optional[str] = None,
+        billing_plan_frequency_interval_count: Optional[str] = None,
+        billing_plan_start_date: Optional[str] = None,
+        billing_plan_one_time_charges_product_value: Optional[str] = None,
+        billing_plan_one_time_charges_total_amount_value: Optional[str] = None,
+        product_description: Optional[str] = None,
+        name: Optional[str] = None,
+        return_url: Optional[str] = None,
+        cancel_url: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Crear un Setup Token para almacenar temporalmente un método de pago
@@ -100,8 +107,15 @@ class VaultService:
             paypal_request_id=paypal_request_id,
             usage_type=usage_type,
             usage_pattern=usage_pattern,
-            billing_plan=billing_plan,
-            experience_context=experience_context
+            billing_plan_price_value=billing_plan_price_value,
+            billing_plan_frequency_interval_count=billing_plan_frequency_interval_count,
+            billing_plan_start_date=billing_plan_start_date,
+            billing_plan_one_time_charges_product_value=billing_plan_one_time_charges_product_value,
+            billing_plan_one_time_charges_total_amount_value=billing_plan_one_time_charges_total_amount_value,
+            product_description=product_description,
+            name=name,
+            return_url=return_url,
+            cancel_url=cancel_url
         )
 
     def get_setup_token(self, setup_token_id: str) -> Dict[str, Any]:

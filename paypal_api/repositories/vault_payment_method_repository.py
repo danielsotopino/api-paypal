@@ -23,7 +23,7 @@ class VaultPaymentMethodRepository:
                 customer_type=payment_method_data.get('customer_type', 'CONSUMER'),
                 payer_id=payment_method_data.get('payer_id'),
                 permit_multiple_tokens=payment_method_data.get('permit_multiple_tokens', False),
-                status=payment_method_data.get('status', 'ACTIVE'),
+                is_active=True,
                 paypal_status=payment_method_data.get('paypal_status'),
                 paypal_links=payment_method_data.get('paypal_links')
             )

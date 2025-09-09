@@ -120,13 +120,21 @@ class PayPalPaymentSource(BaseModel):
     experience_context: Optional[ExperienceContext] = Field(None, description="Contexto de experiencia")
 
 
-class PaymentMethodRequest(BaseModel):
-    pass
-    # payer_id: str = Field(..., description="ID del pagador")
-    # type: PaymentMethodType = Field(..., description="Tipo de método de pago")
-    # credit_card: Optional[CreditCardRequest] = Field(None, description="Datos de tarjeta de crédito")
-    # paypal: Optional[PayPalPaymentSource] = Field(None, description="Datos de PayPal con billing plan")
-    # use_paypal_payment_source: bool = Field(False, description="Usar PayPal como fuente de pago")
+class VaultSetupTokenRequest(BaseModel):
+    customer_id: Optional[str] = Field(..., description="ID del cliente")
+    merchant_customer_id: Optional[str] = Field(..., description="ID del merchant")
+    paypal_request_id: Optional[str] = Field(..., description="ID de la solicitud de PayPal")
+    usage_type: Optional[str] = Field(..., description="Tipo de uso")
+    usage_pattern: Optional[str] = Field(..., description="Patrón de uso")
+    billing_plan_price_value: str = Field(..., description="Valor del plan de facturación")
+    billing_plan_frequency_interval_count: str = Field(..., description="Cantidad de intervalos del plan de facturación")
+    billing_plan_start_date: str = Field(..., description="Fecha de inicio del plan de facturación")
+    billing_plan_one_time_charges_product_value: str = Field(..., description="Valor del producto del plan de facturación")
+    billing_plan_one_time_charges_total_amount_value: str = Field(..., description="Valor total del plan de facturación")
+    product_description: str = Field(..., description="Descripción del producto")
+    name: str = Field(..., description="Nombre del producto")
+    return_url: str = Field(..., description="URL de retorno")
+    cancel_url: str = Field(..., description="URL de cancelación")
 
 
 class CreditCardResponse(BaseModel):

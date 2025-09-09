@@ -47,8 +47,15 @@ class PaypalVaultService:
         paypal_request_id: Optional[str] = None,
         usage_type: Optional[str] = None,
         usage_pattern: Optional[str] = None,
-        billing_plan: Optional[Dict[str, Any]] = None,
-        experience_context: Optional[Dict[str, Any]] = None,
+        billing_plan_price_value: Optional[str] = None,
+        billing_plan_frequency_interval_count: Optional[str] = None,
+        billing_plan_start_date: Optional[str] = None, #YYYY-MM-DD
+        billing_plan_one_time_charges_product_price_value: Optional[str] = None,
+        billing_plan_one_time_charges_total_amount_value: Optional[str] = None,
+        product_description: Optional[str] = None,
+        name: Optional[str] = None,
+        return_url: Optional[str] = None,
+        cancel_url: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Crea un Setup Token para guardar un método de pago temporalmente
@@ -68,44 +75,44 @@ class PaypalVaultService:
                         "paypal": {
                             "usage_type": usage_type or "MERCHANT",
                             "usage_pattern": usage_pattern or "SUBSCRIPTION_PREPAID",
-                            "billing_plan": billing_plan or {
+                            "billing_plan": {
                                 "billing_cycles": [
                                     {
                                         "tenure_type": "REGULAR",
                                         "pricing_scheme": {
                                             "pricing_model": "FIXED",
                                             "price": {
-                                                "value": "100",
+                                                "value": billing_plan_price_value,
                                                 "currency_code": "USD",
                                             },
                                         },
                                         "frequency": {
                                             "interval_unit": "MONTH",
-                                            "interval_count": "1",
+                                            "interval_count": billing_plan_frequency_interval_count,
                                         },
                                         "total_cycles": "1",
-                                        "start_date": "2025-09-06",
+                                        "start_date": billing_plan_start_date,
                                     },
                                 ],
                                 "one_time_charges": {
                                     "product_price": {
-                                        "value": "10",
+                                        "value": billing_plan_one_time_charges_product_price_value,
                                         "currency_code": "USD",
                                     },
                                     "total_amount": {
-                                        "value": 10,
+                                        "value": billing_plan_one_time_charges_total_amount_value,
                                         "currency_code": "USD",
                                     },
                                 },
                                 "product": {
-                                    "description": "Yearly Membership",
+                                    "description": product_description,
                                     "quantity": "1",
                                 },
-                                "name": "Company",
+                                "name": name,
                             },
-                            "experience_context": experience_context or {
-                                "return_url": "https://example.com/returnUrl",
-                                "cancel_url": "https://example.com/cancelUrl",
+                            "experience_context": {
+                                "return_url": return_url,
+                                "cancel_url": cancel_url,
                             },
                         },
                     },
