@@ -172,7 +172,7 @@ class VaultService:
                 'paypal_links': paypal_response.get('links', [])
             }
 
-            payment_method = self.payment_method_repo.create(db, payment_method_data)
+            payment_method = self.payment_method_repo.get_or_create(db, payment_method_data)
             
             logger.info("Payment token creado y almacenado exitosamente",
                        payment_method_id=payment_method.id,

@@ -69,7 +69,7 @@ class PaypalVaultService:
             # Construir el objeto collect exacto como se requiere
             # TODO: ver que debe ir a nivel de controller
             collect = {
-                "paypal_request_id": paypal_request_id,
+                "paypal_request_id": paypal_request_id or str(uuid.uuid4()),
                 "body": {
                     "payment_source": {
                         "paypal": {

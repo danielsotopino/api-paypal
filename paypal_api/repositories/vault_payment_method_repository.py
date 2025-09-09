@@ -224,3 +224,61 @@ class VaultPaymentMethodRepository:
                 VaultPaymentMethod.deleted_at.is_(None)
             )
         ).all()
+
+    @staticmethod
+    def get_or_create(db: Session, payment_method_data: Dict[str, Any]) -> VaultPaymentMethod:
+        """
+        Obtener o crear un método de pago basado en paypal_payment_token_id
+        Si existe, lo activa (is_active = True) y actualiza sus datos
+        Si no existe, lo crea
+        """
+        try:
+            paypal_token_id = payment_method_data.get('paypal_payment_token_id')
+            if not paypal_token_id:
+                raise ValueError("paypal_payment_token_id es requerido")
+            
+            # Buscar método de pago existente por paypal_payment_token_id
+            existing_payment_method = db.query(VaultPaymentMethod).filter(
+                VaultPaymentMethod.paypal_payment_token_id == paypal_token_id
+            ).first()
+            
+            if existing_payment_method:
+                # Si existe, activarlo y actualizar datos
+                logger.info("Método de pago existente encontrado, activando y actualizando", 
+                           payment_method_id=existing_payment_method.id,
+                           paypal_token_id=paypal_token_id)
+                
+                # Activar el método de pago
+                existing_payment_method.is_active = True
+                existing_payment_method.deleted_at = None
+                
+                # Actualizar campos relevantes (excluyendo id, created_at)
+                update_fields = [
+                    'customer_id', 'payment_source_type', 'usage_type', 'customer_type',
+                    'payer_id', 'permit_multiple_tokens', 'paypal_status', 'paypal_links'
+                ]
+                
+                for field in update_fields:
+                    if field in payment_method_data:
+                        setattr(existing_payment_method, field, payment_method_data[field])
+                
+                existing_payment_method.updated_at = datetime.utcnow()
+                db.commit()
+                db.refresh(existing_payment_method)
+                
+                logger.info("Método de pago existente activado y actualizado exitosamente", 
+                           payment_method_id=existing_payment_method.id,
+                           paypal_token_id=paypal_token_id)
+                return existing_payment_method
+            else:
+                # Si no existe, crear nuevo método de pago
+                logger.info("Método de pago no encontrado, creando nuevo", 
+                           paypal_token_id=paypal_token_id)
+                return VaultPaymentMethodRepository.create(db, payment_method_data)
+                
+        except Exception as e:
+            db.rollback()
+            logger.error("Error en get_or_create método de pago", 
+                        paypal_token_id=payment_method_data.get('paypal_payment_token_id'),
+                        error=str(e), exc_info=True)
+            raise
