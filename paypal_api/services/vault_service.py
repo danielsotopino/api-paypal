@@ -229,6 +229,56 @@ class VaultService:
             logger.error("Error obteniendo payment token", 
                         token_id=payment_token_id, error=str(e), exc_info=True)
             raise
+    
+    def get_payment_tokens_by_customer_id(
+        self,
+        db: Session,
+        customer_id: int,
+        sync_with_paypal: bool = False,
+        skip: int = 0,
+        limit: int = 100
+    ) -> list[VaultPaymentMethod]:
+        """
+        Obtener Payment Tokens de un cliente por customer_id, con opción de sincronizar con PayPal
+        """
+        try:
+            payment_methods, _ = self.payment_method_repo.get_active_by_customer_id(
+                db, customer_id, skip=skip, limit=limit
+            )
+
+            if sync_with_paypal:
+                for payment_method in payment_methods:
+                    try:
+                        paypal_response = self.paypal_vault_service.get_payment_token(
+                            payment_method.paypal_payment_token_id
+                        )
+                        paypal_status = paypal_response.get('status')
+                        if paypal_status and paypal_status != payment_method.paypal_status:
+                            self.payment_method_repo.update(db, payment_method.id, {
+                                'paypal_status': paypal_status,
+                                'paypal_links': paypal_response.get('links', [])
+                            })
+                            logger.info(
+                                "Payment token sincronizado con PayPal",
+                                token_id=payment_method.paypal_payment_token_id,
+                                new_status=paypal_status
+                            )
+                    except PayPalCommunicationException as e:
+                        logger.warning(
+                            "Error sincronizando con PayPal, usando datos locales",
+                            token_id=payment_method.paypal_payment_token_id,
+                            error=str(e)
+                        )
+            return payment_methods
+
+        except Exception as e:
+            logger.error(
+                "Error obteniendo payment tokens por customer_id",
+                customer_id=customer_id,
+                error=str(e),
+                exc_info=True
+            )
+            raise
 
     def delete_payment_token(self, db: Session, payment_token_id: str) -> bool:
         """
@@ -279,7 +329,7 @@ class VaultService:
         try:
             if use_local_db:
                 # Buscar cliente por PayPal customer ID
-                customer = self.customer_service.get_customer_by_paypal_id(db, customer_id)
+                customer = self.customer_service.get_customer_by_id(db, customer_id)
                 
                 if not customer:
                     logger.warning("Cliente no encontrado en DB", customer_id=customer_id)
@@ -305,7 +355,7 @@ class VaultService:
                         "id": pm.paypal_payment_token_id,
                         "customer_id": customer.paypal_customer_id,
                         "payment_source_type": pm.payment_source_type,
-                        "status": pm.paypal_status or pm.status,
+                        "is_active": pm.paypal_status or pm.is_active,
                         "create_time": pm.created_at.isoformat() if pm.created_at else None,
                         "update_time": pm.updated_at.isoformat() if pm.updated_at else None
                     })
