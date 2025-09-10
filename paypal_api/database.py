@@ -2,14 +2,31 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from paypal_api.config import settings
+from paypal_api.models.base import Base
 
-engine = create_engine(settings.DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+engine = None
+SessionLocal = None
 
-Base = declarative_base()
+def init_db(database_url=None):
+    """Initialize database connection"""
+    global engine, SessionLocal
+    
+    if database_url is None:
+        database_url = settings.DATABASE_URL
+    
+    engine = create_engine(database_url)
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    
+    # Create all tables if they don't exist
+    Base.metadata.create_all(bind=engine)
+    
+    return engine
 
 def get_db():
-    """Dependency to get database session"""
+    """Get a database session"""
+    if SessionLocal is None:
+        init_db()
+        
     db = SessionLocal()
     try:
         yield db
