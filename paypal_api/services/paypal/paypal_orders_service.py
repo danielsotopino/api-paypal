@@ -3,6 +3,9 @@ from paypalserversdk.http.api_response import ApiResponse
 from paypalserversdk.http.auth.o_auth_2 import ClientCredentialsAuthCredentials
 import structlog
 import uuid
+from decimal import Decimal
+from datetime import datetime
+from sqlalchemy.orm import Session
 from paypal_api.config import settings
 from paypal_api.core.exceptions import PayPalCommunicationException
 from paypal_api.schemas.paypal_schemas import (
@@ -15,6 +18,7 @@ from paypal_api.schemas.paypal_schemas import (
     SellerProtectionResponse,
     SellerReceivableBreakdownResponse
 )
+from paypal_api.repositories.order_repository import OrderRepository
 
 # Importaciones del SDK de PayPal
 from paypalserversdk.paypal_serversdk_client import PaypalServersdkClient
@@ -376,6 +380,212 @@ class PaypalOrdersService:
                         error=str(e), 
                         exc_info=True)
             raise PayPalCommunicationException(f"Error creando orden con vault token: {str(e)}")
+    
+    def create_order_with_vault_token_and_store(
+        self,
+        db: Session,
+        vault_id: str,
+        amount: str,
+        currency_code: str = "USD",
+        intent: str = "CAPTURE",
+        description: Optional[str] = None,
+        reference_id: Optional[str] = None,
+        return_url: Optional[str] = None,
+        cancel_url: Optional[str] = None,
+        paypal_request_id: Optional[str] = None,
+        customer_id: Optional[int] = None,
+        vault_payment_method_id: Optional[int] = None
+    ) -> tuple[OrderCreateResponse, int]:
+        """
+        Crear una orden usando un token guardado en el vault y almacenar en la base de datos
+        
+        Args:
+            db: Sesión de base de datos
+            vault_id: ID del payment token guardado en el vault
+            amount: Monto de la orden
+            currency_code: Código de moneda
+            intent: Intención de la orden
+            description: Descripción de la orden
+            reference_id: ID de referencia del comerciante
+            return_url: URL de retorno exitoso
+            cancel_url: URL de retorno cancelado
+            paypal_request_id: ID de request de PayPal
+            customer_id: ID del cliente en nuestra base de datos
+            vault_payment_method_id: ID del método de pago guardado
+            
+        Returns:
+            Tuple con OrderCreateResponse y el ID de la orden en la base de datos
+        """
+        try:
+            # Preparar purchase units
+            purchase_units = [{
+                "amount": {
+                    "currency_code": currency_code,
+                    "value": amount
+                }
+            }]
+            
+            # Agregar descripción y referencia si se proporcionan
+            if description or reference_id:
+                purchase_units[0].update({
+                    "description": description,
+                    "reference_id": reference_id
+                })
+            
+            # Preparar payment source con vault token
+            payment_source = {
+                "paypal": {
+                    "vault_id": vault_id,
+                    "stored_credential": {
+                        "payment_initiator": "MERCHANT",
+                        "usage": "SUBSEQUENT",
+                        "usage_pattern": "SUBSCRIPTION_PREPAID"
+                    }
+                }
+            }
+            
+            # Preparar application context si se proporcionan URLs
+            application_context = None
+            if return_url or cancel_url:
+                application_context = {}
+                if return_url:
+                    application_context["return_url"] = return_url
+                if cancel_url:
+                    application_context["cancel_url"] = cancel_url
+            
+            logger.info("Creando orden con vault token y almacenando en DB", 
+                       vault_id=vault_id,
+                       amount=amount,
+                       currency_code=currency_code,
+                       intent=intent,
+                       customer_id=customer_id)
+            
+            # Crear la orden en PayPal
+            paypal_response = self.create_order(
+                intent=intent,
+                purchase_units=purchase_units,
+                payment_source=payment_source,
+                application_context=application_context,
+                paypal_request_id=paypal_request_id
+            )
+            
+            # Preparar datos para almacenar en la base de datos
+            order_data = {
+                'paypal_order_id': paypal_response.order_id,
+                'customer_id': customer_id,
+                'vault_payment_method_id': vault_payment_method_id,
+                'payer_id': paypal_response.payer_id,
+                'payer_email': paypal_response.payer_email,
+                'intent': intent,
+                'status': paypal_response.status.value,
+                'amount': Decimal(amount),
+                'currency': currency_code,
+                'description': description,
+                'reference_id': reference_id,
+                'return_url': return_url,
+                'cancel_url': cancel_url,
+                'approval_url': paypal_response.approval_url,
+                'paypal_response': {
+                    'order_id': paypal_response.order_id,
+                    'status': paypal_response.status.value,
+                    'payment_source': paypal_response.payment_source,
+                    'payer_email': paypal_response.payer_email,
+                    'payer_id': paypal_response.payer_id,
+                    'total_amount': paypal_response.total_amount,
+                    'currency_code': paypal_response.currency_code,
+                    'create_time': paypal_response.create_time,
+                    'approval_url': paypal_response.approval_url,
+                    'captures': [
+                        {
+                            'id': capture.id,
+                            'status': capture.status.value,
+                            'amount': {
+                                'currency_code': capture.amount.currency_code,
+                                'value': capture.amount.value
+                            },
+                            'create_time': capture.create_time,
+                            'update_time': capture.update_time,
+                            'final_capture': capture.final_capture,
+                            'seller_protection': {
+                                'status': capture.seller_protection.status,
+                                'dispute_categories': capture.seller_protection.dispute_categories
+                            } if capture.seller_protection else None,
+                            'seller_receivable_breakdown': {
+                                'gross_amount': {
+                                    'currency_code': capture.seller_receivable_breakdown.gross_amount.currency_code,
+                                    'value': capture.seller_receivable_breakdown.gross_amount.value
+                                },
+                                'paypal_fee': {
+                                    'currency_code': capture.seller_receivable_breakdown.paypal_fee.currency_code,
+                                    'value': capture.seller_receivable_breakdown.paypal_fee.value
+                                },
+                                'net_amount': {
+                                    'currency_code': capture.seller_receivable_breakdown.net_amount.currency_code,
+                                    'value': capture.seller_receivable_breakdown.net_amount.value
+                                }
+                            } if capture.seller_receivable_breakdown else None
+                        } for capture in paypal_response.captures
+                    ],
+                    'links': [
+                        {
+                            'href': link.href,
+                            'rel': link.rel,
+                            'method': link.method
+                        } for link in paypal_response.links
+                    ]
+                }
+            }
+            
+            # Procesar capturas si existen
+            if paypal_response.captures:
+                primary_capture = paypal_response.captures[0]  # Tomar la primera captura
+                order_data.update({
+                    'capture_id': primary_capture.id,
+                    'capture_status': primary_capture.status.value,
+                    'final_capture': primary_capture.final_capture,
+                    'capture_time': datetime.fromisoformat(primary_capture.create_time.replace('Z', '+00:00')) if primary_capture.create_time else None,
+                    'captures': order_data['paypal_response']['captures'],
+                    'seller_protection': {
+                        'status': primary_capture.seller_protection.status,
+                        'dispute_categories': primary_capture.seller_protection.dispute_categories
+                    } if primary_capture.seller_protection else None
+                })
+                
+                # Procesar breakdown de la captura
+                if primary_capture.seller_receivable_breakdown:
+                    breakdown = primary_capture.seller_receivable_breakdown
+                    order_data.update({
+                        'gross_amount': Decimal(breakdown.gross_amount.value),
+                        'paypal_fee': Decimal(breakdown.paypal_fee.value),
+                        'net_amount': Decimal(breakdown.net_amount.value)
+                    })
+            
+            # Procesar enlaces de PayPal
+            if paypal_response.links:
+                order_data['paypal_links'] = [
+                    {
+                        'href': link.href,
+                        'rel': link.rel,
+                        'method': link.method
+                    } for link in paypal_response.links
+                ]
+            
+            # Almacenar en la base de datos
+            db_order = OrderRepository.create(db, order_data)
+            
+            logger.info("Orden creada exitosamente en PayPal y almacenada en DB", 
+                       paypal_order_id=paypal_response.order_id,
+                       db_order_id=db_order.id,
+                       status=paypal_response.status.value)
+            
+            return paypal_response, db_order.id
+            
+        except Exception as e:
+            logger.error("Error en create_order_with_vault_token_and_store", 
+                        vault_id=vault_id,
+                        error=str(e), 
+                        exc_info=True)
+            raise PayPalCommunicationException(f"Error creando orden con vault token y almacenando: {str(e)}")
     
     def create_order_with_items(
         self,

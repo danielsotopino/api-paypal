@@ -82,30 +82,21 @@ async def create_order_with_vault_token(
 
         print("Creando orden con vault token")
         
-        order_response = paypal_orders_service.create_order_with_vault_token(
+        order_response, order_id = paypal_orders_service.create_order_with_vault_token_and_store(db, 
             vault_id=vault_payment.payment_method_id,
             amount=vault_payment.amount,
             currency_code=vault_payment.currency,
             description=vault_payment.description
         )
 
-        # order_response = {
-        #     "id": "123",
-        #     "status": "CREATED",
-        #     "amount": vault_payment.amount,
-        #     "currency": vault_payment.currency,
-        #     "description": vault_payment.description
-        # }
-
-        print(order_response)
-        
         logger.info("Orden con vault token creada exitosamente", 
                    order_id=order_response.order_id,
                    status=order_response.status.value)
+
         return ApiResponse.success_response(order_response)
         
     except PayPalCommunicationException as e:
-        logger.error("Error de comunicación con PayPal", error=str(e))
+        logger.exception("Error de comunicación con PayPal", error=str(e))
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error("Error interno creando orden con vault token", error=str(e), exc_info=True)
